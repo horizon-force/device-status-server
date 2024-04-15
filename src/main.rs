@@ -24,9 +24,9 @@ async fn main() {
         .unwrap_or("8081".parse().unwrap())
         .parse::<u16>()
         .expect("Invalid PORT number");
-    let listener = tokio::net::TcpListener::bind(format!("{}{}", "0.0.0.0", format!(":{}", port)))
-        .await
-        .unwrap();
+    let addr = format!("{}{}", "0.0.0.0", format!(":{}", port));
+    let listener = tokio::net::TcpListener::bind(addr.clone()).await.unwrap();
+    log::info!("Server listening on http://{}", addr);
     axum::serve(listener, app).await.unwrap();
 }
 
