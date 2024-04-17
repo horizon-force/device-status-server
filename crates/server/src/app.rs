@@ -1,5 +1,5 @@
 use crate::controller;
-use axum::routing::{get, post};
+use axum::routing::{get, put};
 use axum::Router;
 use std::env;
 
@@ -11,8 +11,8 @@ pub async fn run() {
     let app = Router::new()
         .route("/", get(crate::controller::root_controller::root))
         .route(
-            "/device",
-            post(controller::device_controller::create_device),
+            "/api/v0/device",
+            put(controller::device_controller::put_device),
         );
 
     // run app with hyper, listening globally on port 8081 or process.env.PORT
@@ -20,7 +20,7 @@ pub async fn run() {
         .unwrap_or("8081".parse().unwrap())
         .parse::<u16>()
         .expect("Invalid PORT number");
-    let addr = format!("{}{}", "0.0.0.0", format!(":{}", port));
+    let addr = format!("0.0.0.0:{port}");
     let listener = tokio::net::TcpListener::bind(addr.clone()).await.unwrap();
     log::info!("Server listening on http://{}", addr);
     axum::serve(listener, app).await.unwrap();
