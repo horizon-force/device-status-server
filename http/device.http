@@ -1,0 +1,12 @@
+### Put Device
+PUT http://localhost:8081/api/v0/device
+Content-Type: application/json
+
+{
+  "id": "id",
+  "name": "name",
+  "lat": 100.0,
+  "lng": 100.0,
+  "error": 50.0,
+  "status_code": 0
+}
