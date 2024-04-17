@@ -49,12 +49,12 @@ pub(crate) async fn put_device(
     Json(payload): Json<PutDeviceRequest>,
 ) -> (StatusCode, Json<PutDeviceResponse>) {
     let result = upsert_device(&payload).await;
-    if result.is_ok() {
+    if let Ok(device) = result {
         (
             StatusCode::OK,
             Json(PutDeviceResponse {
                 message: "success".parse().unwrap(),
-                device: Some(result.unwrap()),
+                device: Some(device),
             }),
         )
     } else {
