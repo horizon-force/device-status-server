@@ -15,25 +15,21 @@ pub(crate) struct Device {
     pub(crate) created_at_ms: i64,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Default, Debug, Serialize, Deserialize)]
 pub(crate) enum DeviceStatusCode {
+    #[default]
     NoFire = 0,
     Fire = 1,
 }
 
-impl Default for DeviceStatusCode {
-    fn default() -> Self {
-        DeviceStatusCode::NoFire
-    }
-}
-
-// TODO: implement actual from / into trait
 impl DeviceStatusCode {
-    pub(crate) fn from_i32(value: i32) -> Result<DeviceStatusCode, String> {
+    pub(crate) fn from_i32(value: i32) -> Result<DeviceStatusCode> {
         match value {
             0 => Ok(DeviceStatusCode::NoFire),
             1 => Ok(DeviceStatusCode::Fire),
-            _ => Err("Invalid value for DeviceStatusCode".parse().unwrap()),
+            _ => {
+                anyhow::bail!("Invalid number for status code")
+            }
         }
     }
 }

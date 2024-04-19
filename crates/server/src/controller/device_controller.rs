@@ -1,9 +1,7 @@
-use crate::model::device::{Device, DeviceStatusCode};
+use crate::exception::app_error::AppError;
+use crate::model::device::Device;
 use crate::service::device_service::upsert_device;
-use axum::handler::Handler;
 use axum::Json;
-use chrono::{DateTime, Utc};
-use http::StatusCode;
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -17,7 +15,7 @@ pub(crate) struct PutDeviceRequest {
     status_code: i32,
 }
 
-// TODO: use annotation to implement getters
+// TODO: use macro to implement getters
 impl PutDeviceRequest {
     pub fn id(&self) -> &str {
         &self.id
@@ -47,23 +45,9 @@ pub(crate) struct PutDeviceResponse {
 
 pub(crate) async fn put_device(
     Json(payload): Json<PutDeviceRequest>,
-) -> (StatusCode, Json<PutDeviceResponse>) {
-    let result = upsert_device(&payload).await;
-    if let Ok(device) = result {
-        (
-            StatusCode::OK,
-            Json(PutDeviceResponse {
-                message: "success".parse().unwrap(),
-                device: Some(device),
-            }),
-        )
-    } else {
-        (
-            StatusCode::BAD_REQUEST,
-            Json(PutDeviceResponse {
-                message: result.err().unwrap_or("internal error".parse().unwrap()),
-                device: None,
-            }),
-        )
-    }
+) -> Result<Json<PutDeviceResponse>, AppError> {
+    Ok(Json(PutDeviceResponse {
+        message: "success".parse().unwrap(),
+        device: Some(upsert_device(&payload).await?),
+    }))
 }
