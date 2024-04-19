@@ -2,6 +2,7 @@ use crate::exception::app_error::AppError;
 use crate::model::device::Device;
 use crate::service::device_service::upsert_device;
 use axum::Json;
+use deadpool_redis::Pool;
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -45,9 +46,10 @@ pub(crate) struct PutDeviceResponse {
 
 pub(crate) async fn put_device(
     Json(payload): Json<PutDeviceRequest>,
+    redis_pool: Pool,
 ) -> Result<Json<PutDeviceResponse>, AppError> {
     Ok(Json(PutDeviceResponse {
         message: "success".parse().unwrap(),
-        device: Some(upsert_device(&payload).await?),
+        device: Some(upsert_device(&payload, redis_pool).await?),
     }))
 }

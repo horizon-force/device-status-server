@@ -3,10 +3,10 @@ PUT http://localhost:8081/api/v0/device
 Content-Type: application/json
 
 {
-  "id": "id",
-  "name": "name",
-  "lat": 100.0,
-  "lng": 100.0,
-  "error": 50.0,
-  "status_code": 0
+  "id": "device-0",
+  "name": "north cal",
+  "lat": 101.0,
+  "lng": 102.0,
+  "error": 53.0,
+  "status_code": 1
 }
