@@ -1,55 +1,28 @@
+use crate::controller::get_device_response::GetDeviceResponse;
+use crate::controller::put_device_request::PutDeviceRequest;
+use crate::controller::put_device_response::PutDeviceResponse;
 use crate::exception::app_error::AppError;
-use crate::model::device::Device;
-use crate::service::device_service::upsert_device;
+use crate::service::device_service;
+use axum::extract::{Path, State};
 use axum::Json;
 use deadpool_redis::Pool;
-use serde::Deserialize;
-use serde::Serialize;
-
-#[derive(Debug, Serialize, Deserialize)]
-pub(crate) struct PutDeviceRequest {
-    id: String,
-    name: String,
-    lat: f32,
-    lng: f32,
-    error: f32,
-    status_code: i32,
-}
-
-// TODO: use macro to implement getters
-impl PutDeviceRequest {
-    pub fn id(&self) -> &str {
-        &self.id
-    }
-    pub fn name(&self) -> &str {
-        &self.name
-    }
-    pub fn lat(&self) -> f32 {
-        self.lat
-    }
-    pub fn lng(&self) -> f32 {
-        self.lng
-    }
-    pub fn error(&self) -> f32 {
-        self.error
-    }
-    pub fn status_code(&self) -> i32 {
-        self.status_code
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub(crate) struct PutDeviceResponse {
-    message: String,
-    device: Option<Device>,
-}
 
 pub(crate) async fn put_device(
+    State(redis_pool): State<Pool>,
     Json(payload): Json<PutDeviceRequest>,
-    redis_pool: Pool,
 ) -> Result<Json<PutDeviceResponse>, AppError> {
     Ok(Json(PutDeviceResponse {
-        message: "success".parse().unwrap(),
-        device: Some(upsert_device(&payload, redis_pool).await?),
+        message: "success".parse()?,
+        device: Some(device_service::upsert_device(&payload, redis_pool).await?),
+    }))
+}
+
+pub(crate) async fn get_device(
+    State(redis_pool): State<Pool>,
+    Path(id): Path<String>,
+) -> Result<Json<GetDeviceResponse>, AppError> {
+    Ok(Json(GetDeviceResponse {
+        message: "success".parse()?,
+        device: Some(device_service::get_device(id, redis_pool).await?),
     }))
 }

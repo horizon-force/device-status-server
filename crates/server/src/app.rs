@@ -1,7 +1,6 @@
 use crate::controller;
-use crate::controller::device_controller::PutDeviceRequest;
 use axum::routing::{get, put};
-use axum::{Json, Router};
+use axum::Router;
 use deadpool_redis::{Config, Runtime};
 use std::env;
 
@@ -17,13 +16,16 @@ pub async fn run() {
 
     // define application and routes
     let app = Router::new()
-        .route("/", get(crate::controller::root_controller::root))
+        .route("/", get(controller::root_controller::root))
+        .route(
+            "/api/v0/device/:id",
+            get(controller::device_controller::get_device),
+        )
         .route(
             "/api/v0/device",
-            put(move |body: Json<PutDeviceRequest>| {
-                controller::device_controller::put_device(body, redis_pool)
-            }),
-        );
+            put(controller::device_controller::put_device),
+        )
+        .with_state(redis_pool);
 
     // run app with hyper, listening globally on port 8081 or process.env.PORT
     let port = env::var("PORT")

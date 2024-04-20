@@ -1,4 +1,5 @@
 use axum::response::{IntoResponse, Response};
+use deadpool_redis::redis::RedisError;
 use http::StatusCode;
 
 pub(crate) struct AppError(pub(crate) anyhow::Error, pub(crate) StatusCode);
@@ -21,5 +22,20 @@ where
 impl AppError {
     pub(crate) fn from(err: anyhow::Error, status: StatusCode) -> Self {
         Self(err, status)
+    }
+
+    pub(crate) fn from_redis_error(err: RedisError) -> Self {
+        let is_internal_error = err.is_timeout()
+            || err.is_cluster_error()
+            || err.is_connection_dropped()
+            || err.is_connection_refusal()
+            || err.is_io_error()
+            || err.is_unrecoverable_error();
+        let status_code = if is_internal_error {
+            StatusCode::INTERNAL_SERVER_ERROR
+        } else {
+            StatusCode::BAD_REQUEST
+        };
+        Self(err.into(), status_code)
     }
 }
