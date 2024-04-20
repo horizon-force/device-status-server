@@ -5,11 +5,14 @@ Content-Type: application/json
 {
   "id": "device-0",
   "name": "north cal",
-  "lat": 103.0,
+  "lat": 104.0,
   "lng": 105.0,
   "error": 53.0,
   "status_code": 1
 }
 
-### Get Device
+### Get Device by ID
 GET http://localhost:8081/api/v0/device/device-0
+
+### Get All Devices
+GET http://localhost:8081/api/v0/device

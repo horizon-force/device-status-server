@@ -1,6 +1,8 @@
+use crate::config::app_state::AppState;
 use crate::controller;
 use async_std::sync::Arc;
 use async_std::sync::RwLock;
+use async_std::sync::Weak;
 use axum::routing::{get, put};
 use axum::Router;
 use deadpool_redis::redis::cmd;
@@ -8,7 +10,6 @@ use deadpool_redis::{Config, Pool, Runtime};
 use std::collections::HashMap;
 use std::env;
 use std::pin::Pin;
-use std::rc::Weak;
 use tokio_cron_scheduler::{Job, JobScheduler};
 
 pub async fn run() {
@@ -22,15 +23,21 @@ pub async fn run() {
 
     // start cron scheduler to periodically store all devices in-memory
     let device_cache: Arc<RwLock<HashMap<String, String>>> = Arc::new(Default::default());
-    start_scheduler(device_cache, redis_pool.clone())
+    start_scheduler(Arc::clone(&device_cache), redis_pool.clone())
         .await
         .expect("Unable to start cron scheduler");
+
+    // global app state
+    let app_state = AppState {
+        redis_pool: redis_pool.clone(),
+        device_cache: Arc::downgrade(&device_cache),
+    };
 
     // define application and routes
     let app = Router::new()
         .route("/", get(controller::root_controller::root))
         .route(
-            "/api/v0/devices",
+            "/api/v0/device",
             get(controller::device_controller::get_devices),
         )
         .route(
@@ -41,7 +48,7 @@ pub async fn run() {
             "/api/v0/device",
             put(controller::device_controller::put_device),
         )
-        .with_state(redis_pool);
+        .with_state(app_state);
 
     // run app with hyper, listening globally on port 8081 or process.env.PORT
     let port = env::var("PORT")
