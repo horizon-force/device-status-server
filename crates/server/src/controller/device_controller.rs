@@ -6,8 +6,6 @@ use crate::exception::app_error::AppError;
 use crate::service::device_service;
 use axum::extract::{Path, State};
 use axum::Json;
-use deadpool_redis::Pool;
-use std::collections::HashMap;
 
 pub(crate) async fn put_device(
     State(app_state): State<AppState>,
@@ -15,7 +13,10 @@ pub(crate) async fn put_device(
 ) -> Result<Json<PutDeviceResponse>, AppError> {
     Ok(Json(PutDeviceResponse {
         message: "success".parse()?,
-        device: Some(device_service::upsert_device(&payload, app_state.redis_pool).await?),
+        device: Some(
+            device_service::upsert_device(&payload, app_state.redis_pool, app_state.device_cache)
+                .await?,
+        ),
     }))
 }
 

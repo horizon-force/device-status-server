@@ -9,7 +9,7 @@ use deadpool_redis::redis::cmd;
 use deadpool_redis::{Config, Pool, Runtime};
 use std::collections::HashMap;
 use std::env;
-use std::pin::Pin;
+use std::time::Duration;
 use tokio_cron_scheduler::{Job, JobScheduler};
 
 pub async fn run() {
@@ -65,50 +65,20 @@ pub async fn start_scheduler(
     device_cache: Arc<RwLock<HashMap<String, String>>>,
     redis_pool: Pool,
 ) -> anyhow::Result<(), anyhow::Error> {
-    // cron job to store all device data in-memory
+    // Update device cache once
+    update_device_cache(&redis_pool, &Arc::downgrade(&device_cache)).await;
+
+    // cron job to store all device data in-memory repeatedly over time
     let sched = JobScheduler::new().await?;
     sched
         .add(
-            Job::new_async("1/10 * * * * *", move |uuid, mut l| {
+            Job::new_repeated_async(Duration::from_secs(10), move |uuid, mut l| {
                 let redis_pool = redis_pool.clone();
                 let device_cache_weak = Arc::downgrade(&device_cache);
 
                 Box::pin(async move {
-                    let mut redis_conn = redis_pool
-                        .get()
-                        .await
-                        .expect("Unable to acquire Redis connection from connection pool");
-                    match cmd("KEYS").arg("*").query_async(&mut redis_conn).await {
-                        Ok(res) => {
-                            let device_cache = device_cache_weak
-                                .upgrade()
-                                .expect("Device cache is no longer available");
-                            device_cache.write().await.clear();
-                            let keys: Vec<String> = res;
-                            for key in keys {
-                                match cmd("GET")
-                                    .arg(&[key.clone()])
-                                    .query_async(&mut redis_conn)
-                                    .await
-                                {
-                                    Ok(device_json) => {
-                                        let device_json: String = device_json;
-                                        device_cache.write().await.insert(key, device_json);
-                                    }
-                                    Err(err) => {
-                                        log::error!("redis error for getting vale {err}");
-                                    }
-                                }
-                            }
-                            log::info!(
-                                "Size of device cache is {}",
-                                device_cache.read().await.len()
-                            );
-                        }
-                        Err(err) => {
-                            log::error!("redis error for getting keys {err}");
-                        }
-                    }
+                    // Update device cache
+                    update_device_cache(&redis_pool, &device_cache_weak).await;
 
                     // Query the next execution time for this job
                     let next_tick = l.next_tick_for_job(uuid).await;
@@ -120,12 +90,52 @@ pub async fn start_scheduler(
             })
             .expect("Unable to create cron job"),
         )
-        .await
-        .expect("Unable to add cron job");
+        .await?;
     sched.start().await?;
     Ok(())
 }
 
 fn create_redis_config() -> Config {
     Config::from_url(env::var("REDIS__URL").unwrap_or("redis://localhost:10001".parse().unwrap()))
+}
+
+async fn update_device_cache(
+    redis_pool: &Pool,
+    device_cache_weak: &Weak<RwLock<HashMap<String, String>>>,
+) {
+    let mut redis_conn = redis_pool
+        .get()
+        .await
+        .expect("Unable to acquire Redis connection from connection pool");
+    match cmd("KEYS").arg("*").query_async(&mut redis_conn).await {
+        Ok(res) => {
+            let device_cache = device_cache_weak
+                .upgrade()
+                .expect("Device cache is no longer available");
+            device_cache.write().await.clear();
+            let keys: Vec<String> = res;
+            for key in keys {
+                match cmd("GET")
+                    .arg(&[key.clone()])
+                    .query_async(&mut redis_conn)
+                    .await
+                {
+                    Ok(device_json) => {
+                        let device_json: String = device_json;
+                        device_cache.write().await.insert(key, device_json);
+                    }
+                    Err(err) => {
+                        log::error!("redis error for getting vale {err}");
+                    }
+                }
+            }
+            log::info!(
+                "Size of device cache is {}",
+                device_cache.read().await.len()
+            );
+        }
+        Err(err) => {
+            log::error!("redis error for getting keys {err}");
+        }
+    }
 }
