@@ -5,6 +5,7 @@ use axum::routing::{get, put};
 use axum::Router;
 use deadpool_redis::redis::cmd;
 use deadpool_redis::{Config, Pool, Runtime};
+use std::collections::HashMap;
 use std::env;
 use std::pin::Pin;
 use std::rc::Weak;
@@ -20,7 +21,7 @@ pub async fn run() {
     let redis_pool = redis_cfg.create_pool(Some(Runtime::Tokio1)).unwrap();
 
     // start cron scheduler to periodically store all devices in-memory
-    let device_cache: Arc<RwLock<Vec<String>>> = Arc::new(Default::default());
+    let device_cache: Arc<RwLock<HashMap<String, String>>> = Arc::new(Default::default());
     start_scheduler(device_cache, redis_pool.clone())
         .await
         .expect("Unable to start cron scheduler");
@@ -54,7 +55,7 @@ pub async fn run() {
 }
 
 pub async fn start_scheduler(
-    device_cache: Arc<RwLock<Vec<String>>>,
+    device_cache: Arc<RwLock<HashMap<String, String>>>,
     redis_pool: Pool,
 ) -> anyhow::Result<(), anyhow::Error> {
     // cron job to store all device data in-memory
@@ -66,7 +67,6 @@ pub async fn start_scheduler(
                 let device_cache_weak = Arc::downgrade(&device_cache);
 
                 Box::pin(async move {
-                    log::info!("Generating device cache");
                     let mut redis_conn = redis_pool
                         .get()
                         .await
@@ -79,17 +79,24 @@ pub async fn start_scheduler(
                             device_cache.write().await.clear();
                             let keys: Vec<String> = res;
                             for key in keys {
-                                log::info!("redis key {key}");
-                                match cmd("GET").arg(&[key]).query_async(&mut redis_conn).await {
+                                match cmd("GET")
+                                    .arg(&[key.clone()])
+                                    .query_async(&mut redis_conn)
+                                    .await
+                                {
                                     Ok(device_json) => {
                                         let device_json: String = device_json;
-                                        device_cache.write().await.push(device_json);
+                                        device_cache.write().await.insert(key, device_json);
                                     }
                                     Err(err) => {
                                         log::error!("redis error for getting vale {err}");
                                     }
                                 }
                             }
+                            log::info!(
+                                "Size of device cache is {}",
+                                device_cache.read().await.len()
+                            );
                         }
                         Err(err) => {
                             log::error!("redis error for getting keys {err}");
