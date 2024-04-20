@@ -1,8 +1,9 @@
 use crate::controller;
 use axum::routing::{get, put};
 use axum::Router;
-use deadpool_redis::{Config, Runtime};
+use deadpool_redis::{Config, Connection, Manager, Pool, Runtime};
 use std::env;
+use tokio_cron_scheduler::{Job, JobScheduler};
 
 pub async fn run() {
     // initialize tracing
@@ -13,6 +14,9 @@ pub async fn run() {
         env::var("REDIS__URL").unwrap_or("redis://localhost:10001".parse().unwrap()),
     );
     let redis_pool = redis_cfg.create_pool(Some(Runtime::Tokio1)).unwrap();
+
+    // start cron scheduler to periodically store all devices in-memory
+    start_scheduler(redis_pool.clone()).await;
 
     // define application and routes
     let app = Router::new()
@@ -36,4 +40,24 @@ pub async fn run() {
     let listener = tokio::net::TcpListener::bind(addr.clone()).await.unwrap();
     log::info!("Server listening on http://{}", addr);
     axum::serve(listener, app).await.unwrap();
+}
+
+pub async fn start_scheduler(_redis_pool_for_cron: Pool) {
+    // cron job to store all device data in-memory
+    let sched = JobScheduler::new()
+        .await
+        .expect("Unable to create cron job scheduler");
+    sched
+        .add(
+            Job::new("1/10 * * * * *", move |_uuid, _lock| {
+                log::info!("{:?} Hi I ran", chrono::Utc::now());
+            })
+            .expect("Unable to create cron job"),
+        )
+        .await
+        .expect("Unable to add cron job");
+    sched
+        .start()
+        .await
+        .expect("Unable to start cron job scheduler");
 }
