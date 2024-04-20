@@ -1,8 +1,13 @@
 use crate::controller;
+use async_std::sync::Arc;
+use async_std::sync::RwLock;
 use axum::routing::{get, put};
 use axum::Router;
-use deadpool_redis::{Config, Connection, Manager, Pool, Runtime};
+use deadpool_redis::redis::cmd;
+use deadpool_redis::{Config, Pool, Runtime};
 use std::env;
+use std::pin::Pin;
+use std::rc::Weak;
 use tokio_cron_scheduler::{Job, JobScheduler};
 
 pub async fn run() {
@@ -10,17 +15,23 @@ pub async fn run() {
     tracing_subscriber::fmt::init();
 
     // initialize redis connection
-    let redis_cfg = Config::from_url(
-        env::var("REDIS__URL").unwrap_or("redis://localhost:10001".parse().unwrap()),
-    );
+    // TODO: rather than initializing redis here, there should be a generate "Redis Service" that abstracts everything
+    let redis_cfg = create_redis_config();
     let redis_pool = redis_cfg.create_pool(Some(Runtime::Tokio1)).unwrap();
 
     // start cron scheduler to periodically store all devices in-memory
-    start_scheduler(redis_pool.clone()).await;
+    let device_cache: Arc<RwLock<Vec<String>>> = Arc::new(Default::default());
+    start_scheduler(device_cache, redis_pool.clone())
+        .await
+        .expect("Unable to start cron scheduler");
 
     // define application and routes
     let app = Router::new()
         .route("/", get(controller::root_controller::root))
+        .route(
+            "/api/v0/devices",
+            get(controller::device_controller::get_devices),
+        )
         .route(
             "/api/v0/device/:id",
             get(controller::device_controller::get_device),
@@ -42,22 +53,65 @@ pub async fn run() {
     axum::serve(listener, app).await.unwrap();
 }
 
-pub async fn start_scheduler(_redis_pool_for_cron: Pool) {
+pub async fn start_scheduler(
+    device_cache: Arc<RwLock<Vec<String>>>,
+    redis_pool: Pool,
+) -> anyhow::Result<(), anyhow::Error> {
     // cron job to store all device data in-memory
-    let sched = JobScheduler::new()
-        .await
-        .expect("Unable to create cron job scheduler");
+    let sched = JobScheduler::new().await?;
     sched
         .add(
-            Job::new("1/10 * * * * *", move |_uuid, _lock| {
-                log::info!("{:?} Hi I ran", chrono::Utc::now());
+            Job::new_async("1/10 * * * * *", move |uuid, mut l| {
+                let redis_pool = redis_pool.clone();
+                let device_cache_weak = Arc::downgrade(&device_cache);
+
+                Box::pin(async move {
+                    log::info!("Generating device cache");
+                    let mut redis_conn = redis_pool
+                        .get()
+                        .await
+                        .expect("Unable to acquire Redis connection from connection pool");
+                    match cmd("KEYS").arg("*").query_async(&mut redis_conn).await {
+                        Ok(res) => {
+                            let device_cache = device_cache_weak
+                                .upgrade()
+                                .expect("Device cache is no longer available");
+                            device_cache.write().await.clear();
+                            let keys: Vec<String> = res;
+                            for key in keys {
+                                log::info!("redis key {key}");
+                                match cmd("GET").arg(&[key]).query_async(&mut redis_conn).await {
+                                    Ok(device_json) => {
+                                        let device_json: String = device_json;
+                                        device_cache.write().await.push(device_json);
+                                    }
+                                    Err(err) => {
+                                        log::error!("redis error for getting vale {err}");
+                                    }
+                                }
+                            }
+                        }
+                        Err(err) => {
+                            log::error!("redis error for getting keys {err}");
+                        }
+                    }
+
+                    // Query the next execution time for this job
+                    let next_tick = l.next_tick_for_job(uuid).await;
+                    match next_tick {
+                        Ok(Some(ts)) => log::info!("Next time for job is {:?}", ts),
+                        _ => log::info!("Could not get next tick for job"),
+                    }
+                })
             })
             .expect("Unable to create cron job"),
         )
         .await
         .expect("Unable to add cron job");
-    sched
-        .start()
-        .await
-        .expect("Unable to start cron job scheduler");
+    sched.start().await?;
+    Ok(())
+}
+
+fn create_redis_config() -> Config {
+    Config::from_url(env::var("REDIS__URL").unwrap_or("redis://localhost:10001".parse().unwrap()))
 }

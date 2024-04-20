@@ -26,3 +26,12 @@ pub(crate) async fn get_device(
         device: Some(device_service::get_device(id, redis_pool).await?),
     }))
 }
+
+pub(crate) async fn get_devices(
+    State(redis_pool): State<Pool>,
+) -> Result<Json<GetDeviceResponse>, AppError> {
+    Ok(Json(GetDeviceResponse {
+        message: "TODO: not implemented yet".parse()?,
+        device: None,
+    }))
+}
