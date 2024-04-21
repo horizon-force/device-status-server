@@ -26,7 +26,6 @@ impl DeviceCacheService {
                         log::info!("Generating one-off instance of device cache...");
                         // Update device cache
                         Self::update_device_cache(app_state).await;
-                        log::info!("Completed generation of one-off instance of device cache");
                     })
                 })
                 .expect("Unable to create cron job"),
@@ -84,7 +83,7 @@ impl DeviceCacheService {
         }
         let update_time = Utc::now() - now;
         log::info!(
-            "Device cache size is {:?} and took {}ms to update",
+            "Device cache size is {:?} and took {}ms to generate",
             cache_size,
             update_time.num_milliseconds()
         );
