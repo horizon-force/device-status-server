@@ -10,7 +10,6 @@ use axum::Router;
 use http::Method;
 use std::collections::HashMap;
 use std::env;
-use std::time::Duration;
 use tower_http::cors::{Any, CorsLayer};
 
 pub async fn run() {

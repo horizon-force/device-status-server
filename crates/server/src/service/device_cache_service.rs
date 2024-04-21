@@ -19,7 +19,7 @@ impl DeviceCacheService {
         let sched = JobScheduler::new().await?;
         sched
             .add(
-                Job::new_one_shot_async(Duration::from_secs(0), move |uuid, mut l| {
+                Job::new_one_shot_async(Duration::from_secs(0), move |_uuid, _l| {
                     let app_state = app_state.clone();
 
                     Box::pin(async move {
@@ -70,7 +70,7 @@ impl DeviceCacheService {
         let now: DateTime<Utc> = Utc::now();
         let devices: Vec<Device> = app_state
             .redis_service
-            .get_all_devices()
+            .get_all()
             .await
             .expect("Unable to get all devices");
         let device_cache = app_state
