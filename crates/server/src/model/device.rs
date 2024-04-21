@@ -1,6 +1,5 @@
 use serde::{Deserialize, Serialize};
 
-// TODO: create builder rather than making all fields public
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub(crate) struct Device {
     pub(crate) id: String,

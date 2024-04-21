@@ -23,10 +23,10 @@ impl DeviceCacheService {
                     let app_state = app_state.clone();
 
                     Box::pin(async move {
-                        log::info!("Generating first instance of device cache...");
+                        log::info!("Generating one-off instance of device cache...");
                         // Update device cache
                         Self::update_device_cache(app_state).await;
-                        log::info!("Completed generation of first instance of device cache");
+                        log::info!("Completed generation of one-off instance of device cache");
                     })
                 })
                 .expect("Unable to create cron job"),
@@ -70,7 +70,7 @@ impl DeviceCacheService {
         let now: DateTime<Utc> = Utc::now();
         let devices: Vec<Device> = app_state
             .redis_service
-            .get_all()
+            .get_all_devices()
             .await
             .expect("Unable to get all devices");
         let device_cache = app_state
