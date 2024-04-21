@@ -1,5 +1,6 @@
 use crate::exception::app_error::AppError;
 use anyhow::Result;
+use chrono::{DateTime, Utc};
 use deadpool_redis::redis::cmd;
 use deadpool_redis::{Config, Pool, Runtime};
 use serde::de::DeserializeOwned;
@@ -46,9 +47,17 @@ impl RedisService {
         let mut result = Vec::new();
         let mut redis_conn = self.pool.get().await?;
         let keys: Vec<String> = cmd("KEYS").arg("*").query_async(&mut redis_conn).await?;
+        log::info!("Getting all values from Redis...");
+        let now: DateTime<Utc> = Utc::now();
         for key in keys {
+            // TODO: make this faster by using threading for the get_by_id() call
             result.push(self.get_by_id(key).await?)
         }
+        let time_delta = Utc::now() - now;
+        log::info!(
+            "Took {}ms to get all values from Redis",
+            time_delta.num_milliseconds()
+        );
         Ok(result)
     }
 }

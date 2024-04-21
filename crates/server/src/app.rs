@@ -7,8 +7,11 @@ use async_std::sync::Arc;
 use async_std::sync::RwLock;
 use axum::routing::{get, post};
 use axum::Router;
+use http::Method;
 use std::collections::HashMap;
 use std::env;
+use std::time::Duration;
+use tower_http::cors::{Any, CorsLayer};
 
 pub async fn run() {
     // initialize tracing
@@ -29,7 +32,21 @@ pub async fn run() {
     // start cron scheduler to periodically store all devices in-memory
     DeviceCacheService::run(app_state.clone())
         .await
-        .expect("Unable to start cron scheduler");
+        .expect("Unable to initialize device cache management service");
+
+    // define CORS policy
+    let cors = CorsLayer::new()
+        .allow_methods([
+            Method::GET,
+            Method::POST,
+            Method::PUT,
+            Method::DELETE,
+            Method::PATCH,
+            Method::CONNECT,
+            Method::TRACE,
+            Method::OPTIONS,
+        ])
+        .allow_origin(Any);
 
     // define application and routes
     let app = Router::new()
@@ -46,6 +63,7 @@ pub async fn run() {
             "/api/v0/device",
             post(controller::device_controller::post_device),
         )
+        .layer(cors)
         .with_state(app_state);
 
     // run app with hyper, listening globally on port 8081 or process.env.PORT

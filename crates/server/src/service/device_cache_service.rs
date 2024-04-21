@@ -8,14 +8,43 @@ pub(crate) struct DeviceCacheService {}
 
 impl DeviceCacheService {
     pub(crate) async fn run(app_state: AppState) -> anyhow::Result<(), anyhow::Error> {
-        // update device cache once
-        Self::update_device_cache(app_state.clone()).await;
+        Self::run_once(app_state.clone()).await?;
+        Self::run_periodically(app_state, Duration::from_secs(600)).await?;
+        Ok(())
+    }
 
+    async fn run_once(app_state: AppState) -> anyhow::Result<(), anyhow::Error> {
+        // update device cache once
         // cron job to store all device data in-memory repeatedly over time
         let sched = JobScheduler::new().await?;
         sched
             .add(
-                Job::new_repeated_async(Duration::from_secs(600), move |uuid, mut l| {
+                Job::new_one_shot_async(Duration::from_secs(0), move |uuid, mut l| {
+                    let app_state = app_state.clone();
+
+                    Box::pin(async move {
+                        log::info!("Generating first instance of device cache...");
+                        // Update device cache
+                        Self::update_device_cache(app_state).await;
+                        log::info!("Completed generation of first instance of device cache");
+                    })
+                })
+                .expect("Unable to create cron job"),
+            )
+            .await?;
+        sched.start().await?;
+        Ok(())
+    }
+
+    async fn run_periodically(
+        app_state: AppState,
+        duration: Duration,
+    ) -> anyhow::Result<(), anyhow::Error> {
+        // cron job to store all device data in-memory repeatedly over time
+        let sched = JobScheduler::new().await?;
+        sched
+            .add(
+                Job::new_repeated_async(duration, move |uuid, mut l| {
                     let app_state = app_state.clone();
 
                     Box::pin(async move {
