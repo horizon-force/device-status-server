@@ -24,3 +24,10 @@ Run the Rust server
 ```shell
 cargo run
 ```
+
+## Environment Variables
+
+```shell
+# optional for local development
+CORS_ALLOW_ORIGIN="http://localhost:5173"
+```

@@ -7,7 +7,7 @@ use async_std::sync::Arc;
 use async_std::sync::RwLock;
 use axum::routing::{get, post};
 use axum::Router;
-use http::Method;
+use http::{HeaderValue, Method};
 use std::collections::HashMap;
 use std::env;
 use tower_http::cors::{Any, CorsLayer};
@@ -34,6 +34,8 @@ pub async fn run() {
         .expect("Unable to initialize device cache management service");
 
     // define CORS policy
+    let consumer_endpoint =
+        env::var("CORS_ALLOW_ORIGIN").unwrap_or("http://localhost:5173".parse().unwrap());
     let cors = CorsLayer::new()
         .allow_methods([
             Method::GET,
@@ -45,7 +47,7 @@ pub async fn run() {
             Method::TRACE,
             Method::OPTIONS,
         ])
-        .allow_origin(Any);
+        .allow_origin(consumer_endpoint.parse::<HeaderValue>().unwrap());
 
     // define application and routes
     let app = Router::new()
