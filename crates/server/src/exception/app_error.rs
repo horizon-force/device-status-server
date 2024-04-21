@@ -1,7 +1,6 @@
 use axum::response::{IntoResponse, Response};
 use deadpool_redis::redis::RedisError;
 use http::StatusCode;
-use serde::{Deserialize, Serialize};
 
 #[derive(Debug)]
 pub(crate) struct AppError(pub(crate) anyhow::Error, pub(crate) StatusCode);
@@ -22,6 +21,7 @@ where
 }
 
 impl AppError {
+    #[allow(dead_code)]
     pub(crate) fn from(err: anyhow::Error, status: StatusCode) -> Self {
         Self(err, status)
     }

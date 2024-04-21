@@ -5,10 +5,11 @@ Content-Type: application/json
 {
   "id": "device-0",
   "name": "north cal",
-  "lat": 107.0,
+  "lat": 99.0,
   "lng": 105.0,
   "error": 53.0,
-  "status_code": "Fire"
+  "status_code": "NoFire",
+  "disabled": false
 }
 
 ### Get Device by ID

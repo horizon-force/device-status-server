@@ -9,6 +9,7 @@ pub(crate) struct PutDeviceRequest {
     pub(crate) lng: f32,
     pub(crate) error: f32,
     pub(crate) status_code: DeviceStatusCode,
+    pub(crate) disabled: bool,
 }
 
 impl PutDeviceRequest {
@@ -29,5 +30,8 @@ impl PutDeviceRequest {
     }
     pub fn status_code(&self) -> DeviceStatusCode {
         self.status_code.clone()
+    }
+    pub fn disabled(&self) -> bool {
+        self.disabled
     }
 }

@@ -11,5 +11,5 @@ pub(crate) struct GetDeviceResponse {
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) struct GetDevicesResponse {
     pub(crate) message: String,
-    pub(crate) devices: Option<HashMap<String, String>>,
+    pub(crate) devices: Option<HashMap<String, Device>>,
 }

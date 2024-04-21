@@ -30,13 +30,8 @@ pub(crate) async fn get_device(
 pub(crate) async fn get_devices(
     State(app_state): State<AppState>,
 ) -> Result<Json<GetDevicesResponse>, AppError> {
-    let device_cache_read_guard = app_state
-        .device_cache
-        .upgrade()
-        .expect("Unable to acquire lock on device cache for reading");
-    let device_cache = device_cache_read_guard.read().await;
     Ok(Json(GetDevicesResponse {
         message: "success".parse()?,
-        devices: Some(device_cache.clone()),
+        devices: Some(device_service::get_devices(app_state).await?),
     }))
 }
