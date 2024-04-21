@@ -1,5 +1,6 @@
 use crate::config::app_state::AppState;
 use crate::model::device::Device;
+use chrono::{DateTime, Utc};
 use std::time::Duration;
 use tokio_cron_scheduler::{Job, JobScheduler};
 
@@ -14,7 +15,7 @@ impl DeviceCacheService {
         let sched = JobScheduler::new().await?;
         sched
             .add(
-                Job::new_repeated_async(Duration::from_secs(10), move |uuid, mut l| {
+                Job::new_repeated_async(Duration::from_secs(60), move |uuid, mut l| {
                     let app_state = app_state.clone();
 
                     Box::pin(async move {
@@ -37,6 +38,7 @@ impl DeviceCacheService {
     }
 
     async fn update_device_cache(app_state: AppState) {
+        let now: DateTime<Utc> = Utc::now();
         let devices: Vec<Device> = app_state
             .redis_service
             .get_all()
@@ -51,6 +53,11 @@ impl DeviceCacheService {
         for device in devices {
             write_guard.insert(device.id.clone(), device);
         }
-        log::info!("Device cache size is {:?}", cache_size);
+        let update_time = Utc::now() - now;
+        log::info!(
+            "Device cache size is {:?} and took {}ms to update",
+            cache_size,
+            update_time.num_milliseconds()
+        );
     }
 }

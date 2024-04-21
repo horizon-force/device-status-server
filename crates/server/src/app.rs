@@ -5,7 +5,7 @@ use crate::service::device_cache_service::DeviceCacheService;
 use crate::service::redis_service::RedisService;
 use async_std::sync::Arc;
 use async_std::sync::RwLock;
-use axum::routing::{get, put};
+use axum::routing::{get, post};
 use axum::Router;
 use std::collections::HashMap;
 use std::env;
@@ -44,7 +44,7 @@ pub async fn run() {
         )
         .route(
             "/api/v0/device",
-            put(controller::device_controller::put_device),
+            post(controller::device_controller::post_device),
         )
         .with_state(app_state);
 

@@ -7,7 +7,7 @@ use crate::service::device_service;
 use axum::extract::{Path, State};
 use axum::Json;
 
-pub(crate) async fn put_device(
+pub(crate) async fn post_device(
     State(app_state): State<AppState>,
     Json(payload): Json<PutDeviceRequest>,
 ) -> Result<Json<PutDeviceResponse>, AppError> {

@@ -1,5 +1,5 @@
-### Put Device
-PUT http://localhost:8081/api/v0/device
+### Post Device
+POST http://localhost:8081/api/v0/device
 Content-Type: application/json
 
 {
