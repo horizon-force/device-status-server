@@ -26,7 +26,7 @@ pub(crate) async fn get_device(
 ) -> Result<Json<GetDeviceResponse>, AppError> {
     Ok(Json(GetDeviceResponse {
         message: "success".parse()?,
-        device: Some(device_service::get_device(id, app_state.redis_pool).await?),
+        device: Some(device_service::get_device(id, app_state).await?),
     }))
 }
 

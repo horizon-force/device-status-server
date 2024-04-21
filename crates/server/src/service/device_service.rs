@@ -1,3 +1,4 @@
+use crate::config::app_state::AppState;
 use crate::controller::put_device_request::PutDeviceRequest;
 use crate::exception::app_error::AppError;
 use crate::model::device::{Device, DeviceStatusCode};
@@ -52,14 +53,7 @@ pub(crate) async fn upsert_device(
     }
 }
 
-pub(crate) async fn get_device(id: String, redis_pool: Pool) -> Result<Device, AppError> {
-    let mut redis_conn = redis_pool.get().await?;
-    match cmd("GET").arg(&[id]).query_async(&mut redis_conn).await {
-        Ok(device_json) => {
-            let device_json: String = device_json;
-            let device: Device = serde_json::from_str(&device_json)?;
-            Ok(device)
-        }
-        Err(err) => Err(AppError::from_redis_error(err)),
-    }
+pub(crate) async fn get_device(id: String, app_state: AppState) -> Result<Device, AppError> {
+    let device = app_state.redis_service.get_by_id::<Device>(id).await?;
+    Ok(device)
 }

@@ -1,5 +1,6 @@
 use crate::config::app_state::AppState;
 use crate::controller;
+use crate::service::redis_service::RedisService;
 use async_std::sync::Arc;
 use async_std::sync::RwLock;
 use async_std::sync::Weak;
@@ -18,6 +19,7 @@ pub async fn run() {
 
     // initialize redis connection
     // TODO: rather than initializing redis here, there should be a generate "Redis Service" that abstracts everything
+    let redis_service = RedisService::default();
     let redis_cfg = create_redis_config();
     let redis_pool = redis_cfg.create_pool(Some(Runtime::Tokio1)).unwrap();
 
@@ -31,6 +33,7 @@ pub async fn run() {
     let app_state = AppState {
         redis_pool: redis_pool.clone(),
         device_cache: Arc::downgrade(&device_cache),
+        redis_service,
     };
 
     // define application and routes
