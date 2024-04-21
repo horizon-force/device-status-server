@@ -15,7 +15,7 @@ impl DeviceCacheService {
         let sched = JobScheduler::new().await?;
         sched
             .add(
-                Job::new_repeated_async(Duration::from_secs(60), move |uuid, mut l| {
+                Job::new_repeated_async(Duration::from_secs(600), move |uuid, mut l| {
                     let app_state = app_state.clone();
 
                     Box::pin(async move {
