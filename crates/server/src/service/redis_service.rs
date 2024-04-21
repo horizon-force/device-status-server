@@ -41,6 +41,23 @@ impl RedisService {
             Err(err) => Err(AppError::from_redis_error(err)),
         }
     }
+
+    pub(crate) async fn get_all<T>(&self) -> Result<Vec<T>, AppError>
+    where
+        T: DeserializeOwned,
+    {
+        let mut result = Vec::new();
+        let mut redis_conn = self.pool.get().await?;
+        let keys: Vec<String> = cmd("KEYS").arg("*").query_async(&mut redis_conn).await?;
+        for key in keys {
+            let item: String = cmd("GET")
+                .arg(&[key.clone()])
+                .query_async(&mut redis_conn)
+                .await?;
+            result.push(serde_json::from_str(&item)?)
+        }
+        Ok(result)
+    }
 }
 
 impl Default for RedisService {

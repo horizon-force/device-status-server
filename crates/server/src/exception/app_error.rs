@@ -1,7 +1,9 @@
 use axum::response::{IntoResponse, Response};
 use deadpool_redis::redis::RedisError;
 use http::StatusCode;
+use serde::{Deserialize, Serialize};
 
+#[derive(Debug)]
 pub(crate) struct AppError(pub(crate) anyhow::Error, pub(crate) StatusCode);
 
 impl IntoResponse for AppError {
