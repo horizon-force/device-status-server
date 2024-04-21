@@ -15,7 +15,7 @@ pub(crate) struct Device {
     pub(crate) created_at_ms: i64,
 }
 
-#[derive(Default, Debug, Serialize, Deserialize)]
+#[derive(Default, Debug, Serialize, Deserialize, Clone)]
 pub(crate) enum DeviceStatusCode {
     #[default]
     NoFire = 0,

@@ -86,8 +86,8 @@ pub async fn start_scheduler(
                     // Query the next execution time for this job
                     let next_tick = l.next_tick_for_job(uuid).await;
                     match next_tick {
-                        Ok(Some(ts)) => log::info!("Next time for job is {:?}", ts),
-                        _ => log::info!("Could not get next tick for job"),
+                        Ok(Some(ts)) => log::info!("Next time for cache refresh is {:?}", ts),
+                        _ => log::info!("Could not get next tick for cache refresh job"),
                     }
                 })
             })

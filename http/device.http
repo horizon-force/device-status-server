@@ -8,7 +8,7 @@ Content-Type: application/json
   "lat": 106.0,
   "lng": 105.0,
   "error": 53.0,
-  "status_code": 1
+  "status_code": "NoFire"
 }
 
 ### Get Device by ID

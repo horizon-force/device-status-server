@@ -1,3 +1,4 @@
+use crate::model::device::DeviceStatusCode;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -7,7 +8,7 @@ pub(crate) struct PutDeviceRequest {
     pub(crate) lat: f32,
     pub(crate) lng: f32,
     pub(crate) error: f32,
-    pub(crate) status_code: i32,
+    pub(crate) status_code: DeviceStatusCode,
 }
 
 impl PutDeviceRequest {
@@ -26,7 +27,7 @@ impl PutDeviceRequest {
     pub fn error(&self) -> f32 {
         self.error
     }
-    pub fn status_code(&self) -> i32 {
-        self.status_code
+    pub fn status_code(&self) -> DeviceStatusCode {
+        self.status_code.clone()
     }
 }
