@@ -21,15 +21,3 @@ pub(crate) enum DeviceStatusCode {
     NoFire = 0,
     Fire = 1,
 }
-
-impl DeviceStatusCode {
-    pub(crate) fn from_i32(value: i32) -> Result<DeviceStatusCode> {
-        match value {
-            0 => Ok(DeviceStatusCode::NoFire),
-            1 => Ok(DeviceStatusCode::Fire),
-            _ => {
-                anyhow::bail!("Invalid number for status code")
-            }
-        }
-    }
-}

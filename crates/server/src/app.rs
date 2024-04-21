@@ -18,8 +18,8 @@ pub async fn run() {
     tracing_subscriber::fmt::init();
 
     // initialize redis connection
-    // TODO: rather than initializing redis here, there should be a generate "Redis Service" that abstracts everything
     let redis_service = RedisService::default();
+    // TODO: should not be directly interacting with redis pool like this
     let redis_cfg = create_redis_config();
     let redis_pool = redis_cfg.create_pool(Some(Runtime::Tokio1)).unwrap();
 
@@ -31,7 +31,6 @@ pub async fn run() {
 
     // global app state
     let app_state = AppState {
-        redis_pool: redis_pool.clone(),
         device_cache: Arc::downgrade(&device_cache),
         redis_service,
     };

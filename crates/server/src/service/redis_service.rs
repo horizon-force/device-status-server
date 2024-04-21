@@ -3,7 +3,7 @@ use anyhow::Result;
 use deadpool_redis::redis::cmd;
 use deadpool_redis::{Config, Pool, Runtime};
 use serde::de::DeserializeOwned;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::env;
 
 #[derive(Clone)]
@@ -12,6 +12,21 @@ pub(crate) struct RedisService {
 }
 
 impl RedisService {
+    pub(crate) async fn put_with_id<T>(&self, id: String, item: T) -> Result<T, AppError>
+    where
+        T: Serialize,
+    {
+        let mut redis_conn = self.pool.get().await?;
+        match cmd("SET")
+            .arg(&[id, serde_json::to_string(&item)?])
+            .query_async::<_, ()>(&mut redis_conn)
+            .await
+        {
+            Ok(_res) => Ok(item),
+            Err(err) => Err(AppError::from_redis_error(err)),
+        }
+    }
+
     pub(crate) async fn get_by_id<T>(&self, id: String) -> Result<T, AppError>
     where
         T: DeserializeOwned,

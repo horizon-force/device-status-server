@@ -3,17 +3,11 @@ use crate::controller::put_device_request::PutDeviceRequest;
 use crate::exception::app_error::AppError;
 use crate::model::device::{Device, DeviceStatusCode};
 use anyhow::Result;
-use async_std::sync::RwLock;
-use async_std::sync::Weak;
 use chrono::{DateTime, Utc};
-use deadpool_redis::{redis::cmd, Pool};
-use http::StatusCode;
-use std::collections::HashMap;
 
-pub(crate) async fn upsert_device(
+pub(crate) async fn put_device(
     payload: &PutDeviceRequest,
-    redis_pool: Pool,
-    device_cache: Weak<RwLock<HashMap<String, String>>>,
+    app_state: AppState,
 ) -> Result<Device, AppError> {
     let now: DateTime<Utc> = Utc::now();
     let id: String = payload.id().parse()?;
@@ -28,27 +22,23 @@ pub(crate) async fn upsert_device(
         updated_at_ms: now.timestamp(),
         created_at_ms: now.timestamp(),
     };
+    // immediately update in-memory device cache if FIRE is detected for device
     if let DeviceStatusCode::Fire = device.status_code {
         let json_str = serde_json::to_string(&device)?;
         log::info!("Detected fire for device {json_str}");
         log::info!("TODO: send MQTT message to all clients that fire was detected");
-        let guard = device_cache
+        let guard = app_state
+            .device_cache
             .upgrade()
             .expect("Unable to acquire lock on device_cache");
         guard.write().await.insert(id.clone(), json_str);
     }
-    let mut redis_conn = redis_pool.get().await?;
-    match cmd("SET")
-        .arg(&[id, serde_json::to_string(&device)?])
-        .query_async::<_, ()>(&mut redis_conn)
+    app_state
+        .redis_service
+        .put_with_id::<Device>(id, device)
         .await
-    {
-        Ok(_res) => Ok(device),
-        Err(err) => Err(AppError::from_redis_error(err)),
-    }
 }
 
 pub(crate) async fn get_device(id: String, app_state: AppState) -> Result<Device, AppError> {
-    let device = app_state.redis_service.get_by_id::<Device>(id).await?;
-    Ok(device)
+    app_state.redis_service.get_by_id::<Device>(id).await
 }

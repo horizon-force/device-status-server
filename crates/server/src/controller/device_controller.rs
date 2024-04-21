@@ -13,10 +13,7 @@ pub(crate) async fn put_device(
 ) -> Result<Json<PutDeviceResponse>, AppError> {
     Ok(Json(PutDeviceResponse {
         message: "success".parse()?,
-        device: Some(
-            device_service::upsert_device(&payload, app_state.redis_pool, app_state.device_cache)
-                .await?,
-        ),
+        device: Some(device_service::put_device(&payload, app_state).await?),
     }))
 }
 
