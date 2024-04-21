@@ -9,7 +9,7 @@ pub(crate) struct DeviceCacheService {}
 impl DeviceCacheService {
     pub(crate) async fn run(app_state: AppState) -> anyhow::Result<(), anyhow::Error> {
         Self::run_once(app_state.clone()).await?;
-        Self::run_periodically(app_state, Duration::from_secs(600)).await?;
+        Self::run_periodically(app_state, Duration::from_secs(60)).await?;
         Ok(())
     }
 
