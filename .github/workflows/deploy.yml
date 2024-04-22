@@ -35,7 +35,7 @@ jobs:
         run: mkdir app
       # put the app in it
       - name: copy
-        run: mv ./target/release/axum-deom ./app/axum
+        run: mv ./target/release/app ./app/app
 
 
       # heroku deployment
@@ -44,7 +44,7 @@ jobs:
           # key from repository secrets
           heroku_api_key: ${{secrets.HEROKU_API_KEY}}
           # name of the Heroku app
-          heroku_app_name: "axum-demo-try2"
+          heroku_app_name: "device-status-server"
           # email from which the app is uploaded
           heroku_email: "rdeepak2002@gmail.com"
 
@@ -52,6 +52,6 @@ jobs:
           appdir: "./app"
 
           # start command
-          procfile: "web: ./axum"
+          procfile: "web: ./app"
           # buildpack is like environment used to run the app
           buildpack: "https://github.com/ph3nx/heroku-binary-buildpack.git"
