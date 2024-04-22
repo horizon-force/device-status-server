@@ -1,0 +1,19 @@
+### Post Device
+POST http://localhost:8081/api/v0/device
+Content-Type: application/json
+
+{
+  "id": "device-0",
+  "name": "north cal",
+  "lat": 99.0,
+  "lng": 105.0,
+  "error": 53.0,
+  "status_code": "NoFire",
+  "disabled": false
+}
+
+### Get Device by ID
+GET http://localhost:8081/api/v0/device/device-0
+
+### Get All Devices
+GET http://localhost:8081/api/v0/device

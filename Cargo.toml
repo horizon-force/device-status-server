@@ -1,0 +1,9 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/*"
+]
+
+[workspace.dependencies]
+tokio = { version = "1.37.0", features = ["rt-multi-thread", "rt", "macros"] }
+server = { path = "./crates/server" }
