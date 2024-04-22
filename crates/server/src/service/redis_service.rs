@@ -60,7 +60,7 @@ impl RedisService {
                         .query_async::<_, String>(&mut redis_conn)
                         .await
                     {
-                        let item = serde_json::from_str::<T>(&*item_json)
+                        let item = serde_json::from_str::<T>(&item_json)
                             .expect("Unable to deserialize JSON to T");
                         sender.send(item).await.expect("unable to send");
                     }
