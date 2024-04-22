@@ -10,7 +10,7 @@ use axum::Router;
 use http::{HeaderValue, Method};
 use std::collections::HashMap;
 use std::env;
-use tower_http::cors::{Any, CorsLayer};
+use tower_http::cors::CorsLayer;
 
 pub async fn run() {
     // initialize tracing
