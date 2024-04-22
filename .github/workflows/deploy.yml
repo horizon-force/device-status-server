@@ -10,6 +10,7 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
+    environment: device-status-server
     steps:
       - uses: actions/checkout@v2
 
@@ -33,7 +34,7 @@ jobs:
 
 
       - name: Build Docker image
-        run: docker build -t registry.heroku.com/${{ env.HEROKU_APP }}/web:latest .
+        run: docker build -t registry.heroku.com/device_status_server/web:latest .
 
       - name: Docker image info
         run: docker images
@@ -45,9 +46,9 @@ jobs:
 
       - name: Push Docker image
         # see here for the details of the release phase https://devcenter.heroku.com/articles/container-registry-and-runtime#release-phase
-        run: docker push registry.heroku.com/${{ env.HEROKU_APP }}/web
+        run: docker push registry.heroku.com/device_status_server/web
 
       - name: Release
         env:
-          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+          HEROKU_API_KEY: ${{ env.HEROKU_API_KEY }}
         run: heroku container:release -a ${{ env.HEROKU_APP }} web
